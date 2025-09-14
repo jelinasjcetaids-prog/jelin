@@ -1,0 +1,81 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+import seaborn as sns
+df = pd.read_csv(r"C:\Users\JELINA G\Downloads\spotify dataset.csv")
+print("Columns in dataset:", df.columns.tolist())
+def classify_mood(row):
+    if row['valence'] >= 0.6 and row['energy'] >= 0.6:
+        return 'Happy'
+    elif row['valence'] <= 0.3 and row['energy'] <= 0.4:
+        return 'Sad'
+    elif row['energy'] >= 0.7 and row['danceability'] >= 0.6:
+        return 'Energetic'
+    elif row['acousticness'] >= 0.5 and row['tempo'] <= 110:
+        return 'Chill'
+    else:
+        return 'Neutral'
+
+df['mood'] = df.apply(classify_mood, axis=1)
+features = ['danceability', 'energy', 'loudness', 'speechiness',
+            'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo']
+X = df[features]
+y = df['mood']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train.fillna('Unknown'))
+mood_labels = ['Chill', 'Energetic', 'Happy', 'Neutral', 'Sad']
+y_test_clean = y_test.fillna('Unknown')
+y_pred = model.predict(X_test)
+
+print("\nClassification Report:\n", classification_report(
+    y_test_clean,
+    y_pred,
+    labels=mood_labels,
+    zero_division=0  
+))
+mood_labels = ['Energetic', 'Chill', 'Happy', 'Sad', 'Neutral']
+mood_counts = df['mood'].value_counts().reindex(mood_labels, fill_value=0)
+mood_df = pd.DataFrame({
+    'Mood': mood_labels,
+    'Count': mood_counts.values
+})
+mood_colors = {
+    'Happy': '#FFD700',      # Gold
+    'Sad': '#1E90FF',        # Dodger Blue
+    'Energetic': '#FF4500',  # Orange Red
+    'Chill': '#32CD32',      # Lime Green
+    'Neutral': '#A9A9A9'     # Dark Gray
+}
+sns.barplot(
+    x='Mood', y='Count',
+    hue='Mood',
+    data=mood_df,
+    palette=mood_colors,
+    dodge=False,
+    legend=True
+)
+plt.title("Mood Distribution in Dataset")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X)
+pca_df = pd.DataFrame(X_pca, columns=['PC1', 'PC2'])
+pca_df['mood'] = y.values
+plt.title("Visual Mood Map of Songs")
+plt.xlabel("Principal Component 1")
+plt.ylabel("plt.figure(figsize=(10, 6)")
+sns.scatterplot(
+    x='PC1', y='PC2',
+    hue='mood',
+    data=pca_df,
+    palette=mood_colors,
+    s=60)
+
+plt.legend(title='Mood')
+plt.tight_layout()
+plt.show()
